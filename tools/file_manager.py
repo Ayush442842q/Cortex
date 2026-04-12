@@ -1,5 +1,6 @@
-from tools import BaseTool
+import os
 import re
+from tools import BaseTool
 
 
 class FileManagerTool(BaseTool):
@@ -13,6 +14,8 @@ class FileManagerTool(BaseTool):
         "'search path/ | pattern', 'mkdir path/to/dir'."
     )
     usage_example = "read README.md"
+
+    MAX_READ_BYTES = 50_000
 
     def run(self, input: str) -> str:
         input = input.strip()
@@ -30,4 +33,29 @@ class FileManagerTool(BaseTool):
         action = tokens[0].lower()
         path   = tokens[1].strip() if len(tokens) > 1 else ""
 
-        return f"Action '{action}' not yet implemented."
+        try:
+            if action == "read":
+                return self._read(path)
+            else:
+                return f"Action '{action}' not yet implemented."
+        except PermissionError:
+            return f"Permission denied: {path}"
+        except Exception as e:
+            return f"Error: {e}"
+
+    def _read(self, path: str) -> str:
+        path = os.path.expanduser(path)
+        if not os.path.exists(path):
+            return f"File not found: {path}"
+        if os.path.isdir(path):
+            return f"{path} is a directory. Use 'list {path}' instead."
+        size = os.path.getsize(path)
+        if size > self.MAX_READ_BYTES:
+            return (
+                f"File too large ({size:,} bytes). "
+                f"Max read size is {self.MAX_READ_BYTES:,} bytes."
+            )
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            content = f.read()
+        lines = content.count("\n") + 1
+        return f"[{path}] ({lines} lines, {size:,} bytes)\n\n{content}"
