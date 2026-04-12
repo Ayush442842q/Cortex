@@ -30,10 +30,14 @@ import subprocess
 import sys
 from tools import BaseTool
 
+G     = "\033[92m"
+R     = "\033[91m"
+B     = "\033[96m"
+RESET = "\033[0m"
+
 _IS_WINDOWS = sys.platform.startswith("win")
 
 # ── Blocklist ─────────────────────────────────────────────────────────────────
-# Patterns for commands that could cause irreversible system damage.
 
 _BLOCKLIST = [
     r"\brm\s+-rf\b",
@@ -82,7 +86,7 @@ class TerminalTool(BaseTool):
     )
     usage_example = "run echo hello"
 
-    TIMEOUT = 30  # seconds before a command is killed
+    TIMEOUT = 30
 
     def __init__(self):
         self._cwd = os.getcwd()
@@ -212,3 +216,67 @@ class TerminalTool(BaseTool):
         if not stdout.strip() and not stderr.strip():
             lines.append("(no output)")
         return "\n".join(lines)
+
+
+# ── Standalone self-test suite ────────────────────────────────────────────────
+
+if __name__ == "__main__":
+    import tempfile
+
+    tool = TerminalTool()
+    passed = 0
+    failed = 0
+
+    def check(label: str, result: str, expected: str):
+        global passed, failed
+        if expected.lower() in result.lower():
+            print(f"  {G}✔{RESET}  {label}")
+            passed += 1
+        else:
+            print(f"  {R}✘{RESET}  {label}")
+            print(f"       got: {result[:120]}")
+            failed += 1
+
+    print()
+    print(f"{B}{'='*55}{RESET}")
+    print(f"{B}  Terminal Tool — self-test{RESET}")
+    print(f"{B}{'='*55}{RESET}")
+
+    # Basic echo
+    check("echo command",    tool.run("run echo hello cortex"), "hello cortex")
+
+    # cwd
+    check("cwd",             tool.run("cwd"),                   "working directory")
+
+    # cd to temp dir
+    with tempfile.TemporaryDirectory() as tmp:
+        check("cd valid",    tool.run(f"cd {tmp}"),             "changed to")
+        check("cwd updated", tool.run("cwd"),                   tmp.lower()[:10])
+        check("cd invalid",  tool.run("cd /this/does/not/exist/xyz"), "not found")
+
+    # env vars
+    check("setenv",          tool.run("setenv CORTEX_TEST=42"), "set cortex_test=42")
+    check("getenv",          tool.run("getenv CORTEX_TEST"),    "cortex_test=42")
+    check("getenv missing",  tool.run("getenv CORTEX_NOKEY"),   "not set")
+
+    # which / where
+    check("which python",    tool.run("which python"),          "python")
+
+    # blocklist
+    check("blocked rm -rf",  tool.run("run rm -rf /"),          "blocked")
+    check("blocked shutdown", tool.run("run shutdown /s /t 0"), "blocked")
+    check("blocked format",  tool.run("run format C:"),         "blocked")
+
+    # timeout
+    check("timeout",         tool.run("run python -c \"import time; time.sleep(60)\""), "timed out")
+
+    # empty command
+    check("empty input",     tool.run(""),                      "no command")
+    check("empty run",       tool.run("run"),                   "empty command")
+
+    print()
+    print(f"  Results: {G}{passed} passed{RESET}  {R}{failed} failed{RESET}")
+    print(f"{B}{'='*55}{RESET}")
+    print()
+    if failed:
+        sys.exit(1)
