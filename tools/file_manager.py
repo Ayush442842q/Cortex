@@ -36,6 +36,10 @@ class FileManagerTool(BaseTool):
         try:
             if action == "read":
                 return self._read(path)
+            elif action == "write":
+                return self._write(path, arg2)
+            elif action == "append":
+                return self._append(path, arg2)
             else:
                 return f"Action '{action}' not yet implemented."
         except PermissionError:
@@ -59,3 +63,17 @@ class FileManagerTool(BaseTool):
             content = f.read()
         lines = content.count("\n") + 1
         return f"[{path}] ({lines} lines, {size:,} bytes)\n\n{content}"
+
+    def _write(self, path: str, content: str) -> str:
+        path = os.path.expanduser(path)
+        os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(content)
+        return f"Written {len(content):,} chars to {path}"
+
+    def _append(self, path: str, content: str) -> str:
+        path = os.path.expanduser(path)
+        os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(content)
+        return f"Appended {len(content):,} chars to {path}"
