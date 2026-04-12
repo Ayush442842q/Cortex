@@ -1,3 +1,4 @@
+Cortex is also known as AgentBase
 # 🤖 AgentBase
 
 An extensible, terminal-based AI agent powered by [Groq](https://console.groq.com).
