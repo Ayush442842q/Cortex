@@ -1,5 +1,6 @@
 import os
 import re
+import glob
 import shutil
 from tools import BaseTool
 
@@ -51,8 +52,16 @@ class FileManagerTool(BaseTool):
                 return self._move(path, arg2)
             elif action in ("copy", "cp"):
                 return self._copy(path, arg2)
+            elif action in ("search", "find"):
+                return self._search(path, arg2)
+            elif action == "exists":
+                return self._exists(path)
             else:
-                return f"Action '{action}' not yet implemented."
+                return (
+                    f"Unknown action: '{action}\'. "
+                    "Available: read, write, append, list, delete, "
+                    "move, copy, search, mkdir, exists"
+                )
         except PermissionError:
             return f"Permission denied: {path}"
         except Exception as e:
@@ -142,3 +151,24 @@ class FileManagerTool(BaseTool):
         else:
             shutil.copy2(src, dest)
         return f"Copied: {src} → {dest}"
+
+    def _search(self, path: str, pattern: str) -> str:
+        path = os.path.expanduser(path)
+        search_glob = os.path.join(path, "**", pattern)
+        matches = glob.glob(search_glob, recursive=True)
+        if not matches:
+            return f"No matches for '{pattern}' in {path}"
+        lines = [f"Found {len(matches)} match(es):"]
+        for m in matches[:50]:
+            lines.append(f"  {m}")
+        if len(matches) > 50:
+            lines.append(f"  ... and {len(matches) - 50} more")
+        return "\n".join(lines)
+
+    def _exists(self, path: str) -> str:
+        path = os.path.expanduser(path)
+        if os.path.isdir(path):
+            return f"Yes — {path} is a directory."
+        if os.path.isfile(path):
+            return f"Yes — {path} is a file."
+        return f"No — {path} does not exist."
