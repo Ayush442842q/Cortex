@@ -68,6 +68,8 @@ class FileManagerTool(BaseTool):
             return f"Error: {e}"
 
     def _read(self, path: str) -> str:
+        if not path:
+            return "Usage: read <path>"
         path = os.path.expanduser(path)
         if not os.path.exists(path):
             return f"File not found: {path}"
@@ -85,6 +87,10 @@ class FileManagerTool(BaseTool):
         return f"[{path}] ({lines} lines, {size:,} bytes)\n\n{content}"
 
     def _write(self, path: str, content: str) -> str:
+        if not path:
+            return "Usage: write <path> | <content>"
+        if not content:
+            return "No content provided. Usage: write <path> | <content>"
         path = os.path.expanduser(path)
         os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
         with open(path, "w", encoding="utf-8") as f:
@@ -92,6 +98,10 @@ class FileManagerTool(BaseTool):
         return f"Written {len(content):,} chars to {path}"
 
     def _append(self, path: str, content: str) -> str:
+        if not path:
+            return "Usage: append <path> | <content>"
+        if not content:
+            return "No content provided. Usage: append <path> | <content>"
         path = os.path.expanduser(path)
         os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
         with open(path, "a", encoding="utf-8") as f:
@@ -119,11 +129,15 @@ class FileManagerTool(BaseTool):
         return f"{path}/  ({len(entries)} items)\n" + "\n".join(lines)
 
     def _mkdir(self, path: str) -> str:
+        if not path:
+            return "Usage: mkdir <path>"
         path = os.path.expanduser(path)
         os.makedirs(path, exist_ok=True)
         return f"Directory ready: {path}"
 
     def _delete(self, path: str) -> str:
+        if not path:
+            return "Usage: delete <path>"
         path = os.path.expanduser(path)
         if not os.path.exists(path):
             return f"Not found: {path}"
@@ -134,14 +148,20 @@ class FileManagerTool(BaseTool):
         return f"Deleted file: {path}"
 
     def _move(self, src: str, dest: str) -> str:
+        if not src or not dest:
+            return "Usage: move <src> | <dest>"
         src  = os.path.expanduser(src)
         dest = os.path.expanduser(dest)
         if not os.path.exists(src):
             return f"Source not found: {src}"
+        if os.path.exists(dest):
+            return f"Destination already exists: {dest}"
         shutil.move(src, dest)
         return f"Moved: {src} → {dest}"
 
     def _copy(self, src: str, dest: str) -> str:
+        if not src or not dest:
+            return "Usage: copy <src> | <dest>"
         src  = os.path.expanduser(src)
         dest = os.path.expanduser(dest)
         if not os.path.exists(src):
@@ -153,7 +173,11 @@ class FileManagerTool(BaseTool):
         return f"Copied: {src} → {dest}"
 
     def _search(self, path: str, pattern: str) -> str:
+        if not path or not pattern:
+            return "Usage: search <path> | <pattern>"
         path = os.path.expanduser(path)
+        if not os.path.isdir(path):
+            return f"Search path not found or not a directory: {path}"
         search_glob = os.path.join(path, "**", pattern)
         matches = glob.glob(search_glob, recursive=True)
         if not matches:
@@ -166,6 +190,8 @@ class FileManagerTool(BaseTool):
         return "\n".join(lines)
 
     def _exists(self, path: str) -> str:
+        if not path:
+            return "Usage: exists <path>"
         path = os.path.expanduser(path)
         if os.path.isdir(path):
             return f"Yes — {path} is a directory."
