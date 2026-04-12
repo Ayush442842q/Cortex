@@ -40,6 +40,10 @@ class FileManagerTool(BaseTool):
                 return self._write(path, arg2)
             elif action == "append":
                 return self._append(path, arg2)
+            elif action in ("list", "ls"):
+                return self._list(path or ".")
+            elif action == "mkdir":
+                return self._mkdir(path)
             else:
                 return f"Action '{action}' not yet implemented."
         except PermissionError:
@@ -77,3 +81,28 @@ class FileManagerTool(BaseTool):
         with open(path, "a", encoding="utf-8") as f:
             f.write(content)
         return f"Appended {len(content):,} chars to {path}"
+
+    def _list(self, path: str) -> str:
+        path = os.path.expanduser(path)
+        if not os.path.exists(path):
+            return f"Path not found: {path}"
+        if os.path.isfile(path):
+            size = os.path.getsize(path)
+            return f"[file] {path} ({size:,} bytes)"
+        entries = sorted(os.listdir(path))
+        if not entries:
+            return f"{path}/ is empty."
+        lines = []
+        for e in entries:
+            full = os.path.join(path, e)
+            if os.path.isdir(full):
+                lines.append(f"  [dir]  {e}/")
+            else:
+                size = os.path.getsize(full)
+                lines.append(f"  [file] {e}  ({size:,} bytes)")
+        return f"{path}/  ({len(entries)} items)\n" + "\n".join(lines)
+
+    def _mkdir(self, path: str) -> str:
+        path = os.path.expanduser(path)
+        os.makedirs(path, exist_ok=True)
+        return f"Directory ready: {path}"
