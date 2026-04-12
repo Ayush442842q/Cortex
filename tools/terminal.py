@@ -1,6 +1,8 @@
 import os
 import re
+import shutil
 import subprocess
+import sys
 from tools import BaseTool
 
 
@@ -15,7 +17,7 @@ _BLOCKLIST = [
     r"\bshutdown\b",
     r"\breboot\b",
     r"\bhalt\b",
-    r":\s*\(\s*\)\s*\{",    # fork bomb pattern: :(){
+    r":\s*\(\s*\)\s*\{",
     r"\bsudo\s+rm\b",
     r"\bchmod\s+-R\s+777\b",
     r"> /dev/sd",
@@ -23,21 +25,21 @@ _BLOCKLIST = [
 ]
 
 
-def _is_blocked(command: str) -> str | None:
-    """Returns the matched pattern string if blocked, else None."""
+def _is_blocked(command: str) -> bool:
     for pattern in _BLOCKLIST:
         if re.search(pattern, command, re.IGNORECASE):
-            return pattern
-    return None
+            return True
+    return False
 
 
 class TerminalTool(BaseTool):
     name = "terminal"
     description = (
         "Run shell commands in the terminal and return the output. "
-        "Supports: 'run <command>', 'cd <path>', 'setenv KEY=VALUE', 'getenv KEY'. "
-        "Dangerous commands (rm -rf, format, shutdown, etc.) are blocked. "
-        "Example: 'run git status', 'cd H:/myproject', 'setenv DEBUG=1'."
+        "Supports: 'run <command>', 'cd <path>', 'setenv KEY=VALUE', "
+        "'getenv KEY', 'which <program>', 'cwd'. "
+        "Dangerous commands are blocked. "
+        "Example: 'run git status', 'which python', 'cwd'."
     )
     usage_example = "run echo hello"
 
@@ -52,22 +54,29 @@ class TerminalTool(BaseTool):
         if not input:
             return "No command provided. Example: 'run echo hello'"
 
-        if input.lower().startswith("cd "):
+        lower = input.lower()
+
+        if lower == "cwd":
+            return f"Current working directory: {self._cwd}"
+
+        if lower.startswith("cd "):
             return self._change_dir(input[3:].strip())
 
-        if input.lower().startswith("setenv "):
+        if lower.startswith("setenv "):
             return self._set_env(input[7:].strip())
 
-        if input.lower().startswith("getenv "):
+        if lower.startswith("getenv "):
             return self._get_env(input[7:].strip())
 
-        command = input[4:].strip() if input.lower().startswith("run ") else input
+        if lower.startswith("which ") or lower.startswith("where "):
+            return self._which(input.split(None, 1)[1].strip())
 
-        blocked = _is_blocked(command)
-        if blocked:
+        command = input[4:].strip() if lower.startswith("run ") else input
+
+        if _is_blocked(command):
             return (
-                f"Blocked: command matches dangerous pattern and was not executed.\n"
-                f"If you intended something safe, rephrase the command."
+                "Blocked: command matches a dangerous pattern and was not executed.\n"
+                "If you intended something safe, rephrase the command."
             )
 
         try:
@@ -101,8 +110,7 @@ class TerminalTool(BaseTool):
         if "=" not in expr:
             return "Usage: setenv KEY=VALUE"
         key, _, value = expr.partition("=")
-        key = key.strip()
-        value = value.strip()
+        key, value = key.strip(), value.strip()
         if not key:
             return "Invalid: key cannot be empty."
         self._env[key] = value
@@ -114,6 +122,12 @@ class TerminalTool(BaseTool):
         if value is None:
             return f"{key} is not set."
         return f"{key}={value}"
+
+    def _which(self, program: str) -> str:
+        path = shutil.which(program, path=self._env.get("PATH"))
+        if path:
+            return f"{program} found at: {path}"
+        return f"{program} not found in PATH."
 
     def _format(self, stdout: str, stderr: str, code: int, timed_out: bool = False) -> str:
         lines = [f"[cwd: {self._cwd}]", f"Exit code: {code}"]
