@@ -22,6 +22,11 @@ import glob
 import shutil
 from tools import BaseTool
 
+G     = "\033[92m"
+R     = "\033[91m"
+B     = "\033[96m"
+RESET = "\033[0m"
+
 
 class FileManagerTool(BaseTool):
     """
@@ -56,7 +61,6 @@ class FileManagerTool(BaseTool):
         if not input:
             return "No command provided. Example: 'read README.md'"
 
-        # Split on the first '|' to get two arguments when needed
         parts = re.split(r"\s*\|\s*", input, maxsplit=1)
         command_part = parts[0].strip()
         arg2 = parts[1].strip() if len(parts) > 1 else ""
@@ -242,3 +246,58 @@ class FileManagerTool(BaseTool):
         if os.path.isfile(path):
             return f"Yes — {path} is a file."
         return f"No — {path} does not exist."
+
+
+# ── Standalone self-test suite ────────────────────────────────────────────────
+
+if __name__ == "__main__":
+    import tempfile
+    import sys
+
+    tool = FileManagerTool()
+    passed = 0
+    failed = 0
+
+    def check(label: str, result: str, expected_fragment: str):
+        global passed, failed
+        if expected_fragment.lower() in result.lower():
+            print(f"  {G}✔{RESET}  {label}")
+            passed += 1
+        else:
+            print(f"  {R}✘{RESET}  {label}")
+            print(f"       got: {result[:120]}")
+            failed += 1
+
+    print()
+    print(f"{B}{'='*55}{RESET}")
+    print(f"{B}  File Manager — self-test{RESET}")
+    print(f"{B}{'='*55}{RESET}")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        f   = os.path.join(tmp, "hello.txt")
+        f2  = os.path.join(tmp, "hello_copy.txt")
+        f3  = os.path.join(tmp, "hello_moved.txt")
+        sub = os.path.join(tmp, "subdir")
+
+        check("write",   tool.run(f"write {f} | Hello, Cortex!"), "written")
+        check("read",    tool.run(f"read {f}"),                   "Hello, Cortex!")
+        check("append",  tool.run(f"append {f} |  More content."), "appended")
+        check("list",    tool.run(f"list {tmp}"),                  "hello.txt")
+        check("mkdir",   tool.run(f"mkdir {sub}"),                 "directory ready")
+        check("exists (file)", tool.run(f"exists {f}"),            "yes")
+        check("exists (dir)",  tool.run(f"exists {sub}"),          "yes")
+        check("copy",    tool.run(f"copy {f} | {f2}"),             "copied")
+        check("move",    tool.run(f"move {f2} | {f3}"),            "moved")
+        check("search",  tool.run(f"search {tmp} | *.txt"),        "match")
+        check("delete",  tool.run(f"delete {f3}"),                 "deleted")
+        check("exists (gone)", tool.run(f"exists {f3}"),           "no")
+        check("read missing",  tool.run(f"read {tmp}/nope.txt"),   "not found")
+        check("write no content", tool.run(f"write {f} |"),        "no content")
+        check("unknown action",   tool.run("fly"),                  "unknown action")
+
+    print()
+    print(f"  Results: {G}{passed} passed{RESET}  {R}{failed} failed{RESET}")
+    print(f"{B}{'='*55}{RESET}")
+    print()
+    if failed:
+        sys.exit(1)
