@@ -47,6 +47,10 @@ class FileManagerTool(BaseTool):
                 return self._mkdir(path)
             elif action in ("delete", "rm"):
                 return self._delete(path)
+            elif action in ("move", "mv"):
+                return self._move(path, arg2)
+            elif action in ("copy", "cp"):
+                return self._copy(path, arg2)
             else:
                 return f"Action '{action}' not yet implemented."
         except PermissionError:
@@ -119,3 +123,24 @@ class FileManagerTool(BaseTool):
             return f"Deleted directory: {path}"
         os.remove(path)
         return f"Deleted file: {path}"
+
+    def _move(self, src: str, dest: str) -> str:
+        src  = os.path.expanduser(src)
+        dest = os.path.expanduser(dest)
+        if not os.path.exists(src):
+            return f"Source not found: {src}"
+        if os.path.exists(dest):
+            return f"Destination already exists: {dest}"
+        shutil.move(src, dest)
+        return f"Moved: {src} -> {dest}"
+
+    def _copy(self, src: str, dest: str) -> str:
+        src  = os.path.expanduser(src)
+        dest = os.path.expanduser(dest)
+        if not os.path.exists(src):
+            return f"Source not found: {src}"
+        if os.path.isdir(src):
+            shutil.copytree(src, dest)
+        else:
+            shutil.copy2(src, dest)
+        return f"Copied: {src} -> {dest}"
