@@ -1,6 +1,34 @@
 import os
+import re
 import subprocess
 from tools import BaseTool
+
+
+# Commands that could cause irreversible system damage
+_BLOCKLIST = [
+    r"\brm\s+-rf\b",
+    r"\brmdir\s+/s\b",
+    r"\bdel\s+/f\b",
+    r"\bformat\b",
+    r"\bmkfs\b",
+    r"\bdd\b",
+    r"\bshutdown\b",
+    r"\breboot\b",
+    r"\bhalt\b",
+    r":\s*\(\s*\)\s*\{",    # fork bomb pattern: :(){
+    r"\bsudo\s+rm\b",
+    r"\bchmod\s+-R\s+777\b",
+    r"> /dev/sd",
+    r"\bwipefs\b",
+]
+
+
+def _is_blocked(command: str) -> str | None:
+    """Returns the matched pattern string if blocked, else None."""
+    for pattern in _BLOCKLIST:
+        if re.search(pattern, command, re.IGNORECASE):
+            return pattern
+    return None
 
 
 class TerminalTool(BaseTool):
@@ -8,6 +36,7 @@ class TerminalTool(BaseTool):
     description = (
         "Run shell commands in the terminal and return the output. "
         "Supports: 'run <command>', 'cd <path>', 'setenv KEY=VALUE', 'getenv KEY'. "
+        "Dangerous commands (rm -rf, format, shutdown, etc.) are blocked. "
         "Example: 'run git status', 'cd H:/myproject', 'setenv DEBUG=1'."
     )
     usage_example = "run echo hello"
@@ -33,6 +62,13 @@ class TerminalTool(BaseTool):
             return self._get_env(input[7:].strip())
 
         command = input[4:].strip() if input.lower().startswith("run ") else input
+
+        blocked = _is_blocked(command)
+        if blocked:
+            return (
+                f"Blocked: command matches dangerous pattern and was not executed.\n"
+                f"If you intended something safe, rephrase the command."
+            )
 
         try:
             process = subprocess.Popen(
