@@ -1,3 +1,21 @@
+"""
+tools/file_manager.py
+=====================
+FileManagerTool — file-system operations for the Cortex agent.
+
+Supported commands (all via run(input)):
+  read   <path>               — read a text file (50 KB cap)
+  write  <path> | <content>  — overwrite / create a file
+  append <path> | <content>  — append to a file
+  list   <path>               — list directory contents
+  mkdir  <path>               — create directory (incl. parents)
+  delete <path>               — delete file or directory tree
+  move   <src>  | <dest>     — move / rename
+  copy   <src>  | <dest>     — copy file or directory tree
+  search <path> | <pattern>  — recursive glob search
+  exists <path>               — check whether a path exists
+"""
+
 import os
 import re
 import glob
@@ -6,6 +24,14 @@ from tools import BaseTool
 
 
 class FileManagerTool(BaseTool):
+    """
+    File-system tool for the Cortex agent.
+
+    All operations are invoked through run(input) where input is a
+    plain-English command string. Two-argument commands use '|' as
+    the separator (e.g. 'write notes.txt | Hello world').
+    """
+
     name = "file_manager"
     description = (
         "Manage files and folders: read, write, append, list, create, "
@@ -17,13 +43,20 @@ class FileManagerTool(BaseTool):
     )
     usage_example = "read README.md"
 
-    MAX_READ_BYTES = 50_000
+    MAX_READ_BYTES = 50_000  # cap file reads at ~50 KB
+
+    # ── Entry point ───────────────────────────────────────────────────────────
 
     def run(self, input: str) -> str:
+        """
+        Parse the command string and dispatch to the right action method.
+        Returns a plain-text result that the agent can reason on.
+        """
         input = input.strip()
         if not input:
             return "No command provided. Example: 'read README.md'"
 
+        # Split on the first '|' to get two arguments when needed
         parts = re.split(r"\s*\|\s*", input, maxsplit=1)
         command_part = parts[0].strip()
         arg2 = parts[1].strip() if len(parts) > 1 else ""
@@ -67,7 +100,10 @@ class FileManagerTool(BaseTool):
         except Exception as e:
             return f"Error: {e}"
 
+    # ── Action methods ────────────────────────────────────────────────────────
+
     def _read(self, path: str) -> str:
+        """Read a text file and return its contents (capped at MAX_READ_BYTES)."""
         if not path:
             return "Usage: read <path>"
         path = os.path.expanduser(path)
@@ -87,6 +123,7 @@ class FileManagerTool(BaseTool):
         return f"[{path}] ({lines} lines, {size:,} bytes)\n\n{content}"
 
     def _write(self, path: str, content: str) -> str:
+        """Overwrite (or create) a file with content."""
         if not path:
             return "Usage: write <path> | <content>"
         if not content:
@@ -98,6 +135,7 @@ class FileManagerTool(BaseTool):
         return f"Written {len(content):,} chars to {path}"
 
     def _append(self, path: str, content: str) -> str:
+        """Append content to an existing file (creates if absent)."""
         if not path:
             return "Usage: append <path> | <content>"
         if not content:
@@ -109,6 +147,7 @@ class FileManagerTool(BaseTool):
         return f"Appended {len(content):,} chars to {path}"
 
     def _list(self, path: str) -> str:
+        """List the contents of a directory (or stat a single file)."""
         path = os.path.expanduser(path)
         if not os.path.exists(path):
             return f"Path not found: {path}"
@@ -129,6 +168,7 @@ class FileManagerTool(BaseTool):
         return f"{path}/  ({len(entries)} items)\n" + "\n".join(lines)
 
     def _mkdir(self, path: str) -> str:
+        """Create a directory (and any missing parents)."""
         if not path:
             return "Usage: mkdir <path>"
         path = os.path.expanduser(path)
@@ -136,6 +176,7 @@ class FileManagerTool(BaseTool):
         return f"Directory ready: {path}"
 
     def _delete(self, path: str) -> str:
+        """Delete a file or entire directory tree."""
         if not path:
             return "Usage: delete <path>"
         path = os.path.expanduser(path)
@@ -148,6 +189,7 @@ class FileManagerTool(BaseTool):
         return f"Deleted file: {path}"
 
     def _move(self, src: str, dest: str) -> str:
+        """Move or rename a file or directory."""
         if not src or not dest:
             return "Usage: move <src> | <dest>"
         src  = os.path.expanduser(src)
@@ -160,6 +202,7 @@ class FileManagerTool(BaseTool):
         return f"Moved: {src} -> {dest}"
 
     def _copy(self, src: str, dest: str) -> str:
+        """Copy a file or directory tree to a new location."""
         if not src or not dest:
             return "Usage: copy <src> | <dest>"
         src  = os.path.expanduser(src)
@@ -173,6 +216,7 @@ class FileManagerTool(BaseTool):
         return f"Copied: {src} -> {dest}"
 
     def _search(self, path: str, pattern: str) -> str:
+        """Recursively search path for files matching a glob pattern."""
         if not path or not pattern:
             return "Usage: search <path> | <pattern>"
         path = os.path.expanduser(path)
@@ -189,6 +233,7 @@ class FileManagerTool(BaseTool):
         return "\n".join(lines)
 
     def _exists(self, path: str) -> str:
+        """Check whether a path exists and whether it is a file or directory."""
         if not path:
             return "Usage: exists <path>"
         path = os.path.expanduser(path)
