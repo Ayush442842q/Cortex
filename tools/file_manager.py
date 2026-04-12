@@ -1,5 +1,6 @@
 import os
 import re
+import shutil
 from tools import BaseTool
 
 
@@ -44,6 +45,8 @@ class FileManagerTool(BaseTool):
                 return self._list(path or ".")
             elif action == "mkdir":
                 return self._mkdir(path)
+            elif action in ("delete", "rm"):
+                return self._delete(path)
             else:
                 return f"Action '{action}' not yet implemented."
         except PermissionError:
@@ -106,3 +109,13 @@ class FileManagerTool(BaseTool):
         path = os.path.expanduser(path)
         os.makedirs(path, exist_ok=True)
         return f"Directory ready: {path}"
+
+    def _delete(self, path: str) -> str:
+        path = os.path.expanduser(path)
+        if not os.path.exists(path):
+            return f"Not found: {path}"
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+            return f"Deleted directory: {path}"
+        os.remove(path)
+        return f"Deleted file: {path}"
