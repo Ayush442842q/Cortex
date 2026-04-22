@@ -1,5 +1,5 @@
-Cortex is also known as AgentBase
-# 🤖 AgentBase
+Agent Base is now cortex
+# 🤖 Cortex
 
 An extensible, terminal-based AI agent powered by [Groq](https://console.groq.com).
 
@@ -93,8 +93,8 @@ class MyTool(BaseTool):
 |---|---|---|
 | **Base** ✅ | Core loop | Think, plan, respond |
 | Week 1 ✅| Code Writer | Write & run code |
-| Week 2 | File Manager | Files & folders |
-| Week 3 | Terminal Tool | Shell commands |
+| Week 2 ✅ | File Manager | Files & folders |
+| Week 3 ✅| Terminal Tool | Shell commands |
 | Week 4 | Environment Setup | Dev environment setup |
 | Week 5 | Web Search | Browse the web |
 | Week 6 | Git Tool | Version control |
