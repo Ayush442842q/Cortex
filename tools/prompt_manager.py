@@ -1,82 +1,82 @@
-"""
-Cortex — Prompt Manager Tool (Week 8)
-Save, load, list, delete, and run prompt templates.
-Stored in ~/.cortex/prompts/
+"""Cortex — Prompt Manager Tool (Week 8)
+Save, load, list and delete reusable prompt templates.
 """
 from __future__ import annotations
-import sys, os, re
-from pathlib import Path
+import os, json
+
+STORE_PATH = os.path.expanduser("~/.agentbase/prompts.json")
 
 try:
     from tools import BaseTool
 except ImportError:
     class BaseTool:
-        name: str = ""
-        description: str = ""
-        usage_example: str = ""
-        def run(self, user_input: str) -> str:
-            raise NotImplementedError
+        name = ""; description = ""; usage_example = ""
+        def run(self, user_input: str) -> str: ...
 
-PROMPTS_DIR = Path.home() / ".cortex" / "prompts"
-PROMPTS_DIR.mkdir(parents=True, exist_ok=True)
+def _load() -> dict:
+    if os.path.exists(STORE_PATH):
+        try: return json.loads(open(STORE_PATH).read())
+        except: pass
+    return {}
 
-def _safe_name(name): return re.sub(r"[^a-zA-Z0-9_\-]", "_", name.strip())[:64]
-def _path(name): return PROMPTS_DIR / f"{_safe_name(name)}.txt"
+def _save(data: dict):
+    os.makedirs(os.path.dirname(STORE_PATH), exist_ok=True)
+    open(STORE_PATH,"w").write(json.dumps(data, indent=2))
+
+def _parse(raw: str) -> dict:
+    raw = raw.strip()
+    if raw.startswith("{"): 
+        try: return json.loads(raw)
+        except: pass
+    return {"action":"list"}
 
 class PromptManagerTool(BaseTool):
-    name = "prompt"
+    name = "prompt_manager"
     description = (
-        "Manage prompt templates.\n"
-        "  prompt save <n> | <text>   -- save\n"
-        "  prompt load <n>            -- show\n"
-        "  prompt list                -- list all\n"
-        "  prompt delete <n>          -- delete\n"
-        "  prompt run <n> [k=v ...]   -- fill {{vars}} and return"
+        "Manage reusable prompt templates. Input JSON with keys: "
+        "action (save|load|list|delete|use), name (str), "
+        "template (str, for save), vars (dict, for use)."
     )
-    usage_example = "prompt save greet | Hello, {{name}}!"
+    usage_example = 'prompt_manager({"action":"save","name":"summarize","template":"Summarize: {text}"})'
 
     def run(self, user_input: str) -> str:
-        user_input = user_input.strip()
-        if not user_input:
-            return "[prompt] Commands: save | load | list | delete | run"
-        parts = user_input.split(None, 1)
-        cmd, rest = parts[0].lower(), (parts[1].strip() if len(parts) > 1 else "")
-        if cmd == "save":
-            if "|" not in rest:
-                return "[prompt] save: use 'save <name> | <text>'"
-            name, text = rest.split("|", 1)
-            name, text = name.strip(), text.strip()
-            if not name or not text:
-                return "[prompt] Name and text required."
-            _path(name).write_text(text, encoding="utf-8")
-            return f"[prompt] Saved '{name}'."
-        elif cmd == "load":
-            p = _path(rest)
-            if not p.exists(): return f"[prompt] '{rest}' not found."
-            return f"[prompt: {rest}]\n{p.read_text(encoding='utf-8')}"
-        elif cmd == "list":
-            files = sorted(PROMPTS_DIR.glob("*.txt"))
-            if not files: return "[prompt] No saved prompts."
-            return "[Saved prompts]\n" + "\n".join(f"  {f.stem}" for f in files)
-        elif cmd == "delete":
-            p = _path(rest)
-            if not p.exists(): return f"[prompt] '{rest}' not found."
-            p.unlink()
-            return f"[prompt] Deleted '{rest}'."
-        elif cmd == "run":
-            parts2 = rest.split()
-            if not parts2: return "[prompt] run needs a name."
-            name = parts2[0]
-            p = _path(name)
-            if not p.exists(): return f"[prompt] '{name}' not found."
-            text = p.read_text(encoding="utf-8")
-            for pair in parts2[1:]:
-                if "=" in pair:
-                    k, v = pair.split("=", 1)
-                    text = text.replace("{{" + k.strip() + "}}", v.strip())
-            remaining = re.findall(r"\{\{(\w+)\}\}", text)
-            result = f"[prompt run: {name}]\n{text}"
-            if remaining:
-                result += f"\n\n[warn] Unfilled vars: {', '.join(remaining)}"
-            return result
-        return f"[prompt] Unknown command '{cmd}'. Use: save | load | list | delete | run"
+        p      = _parse(user_input)
+        action = p.get("action","list").lower()
+        store  = _load()
+        try:
+            if action == "save":
+                name     = p.get("name","")
+                template = p.get("template","")
+                if not name or not template:
+                    return "[prompt_manager] ERROR: name and template required."
+                store[name] = template; _save(store)
+                return f"Saved prompt: '{name}'"
+            elif action == "load":
+                name = p.get("name","")
+                return store.get(name, f"[prompt_manager] Not found: '{name}'")
+            elif action == "list":
+                if not store: return "No prompts saved yet."
+                return "Saved prompts:\n" + "\n".join(f"  • {k}" for k in store)
+            elif action == "delete":
+                name = p.get("name","")
+                if name in store:
+                    del store[name]; _save(store)
+                    return f"Deleted: '{name}'"
+                return f"[prompt_manager] Not found: '{name}'"
+            elif action == "use":
+                name  = p.get("name","")
+                tmpl  = store.get(name)
+                if not tmpl: return f"[prompt_manager] Not found: '{name}'"
+                try: return tmpl.format(**p.get("vars",{}))
+                except KeyError as e: return f"[prompt_manager] Missing var: {e}"
+            else:
+                return f"Unknown action: {action}"
+        except Exception as e:
+            return f"[prompt_manager] ERROR: {e}"
+
+if __name__ == "__main__":
+    t = PromptManagerTool()
+    t.run('{"action":"save","name":"greet","template":"Hello, {name}!"}')
+    print(t.run('{"action":"use","name":"greet","vars":{"name":"Cortex"}}'))
+    t.run('{"action":"delete","name":"greet"}')
+    print("All tests passed.")
