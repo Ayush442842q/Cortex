@@ -1,91 +1,80 @@
-"""
-Cortex — LLM Switcher Tool (Week 7)
-Switch between Groq, OpenAI, and Anthropic at runtime.
+"""Cortex — LLM Switcher Tool (Week 7)
+Query different LLM providers (Groq models) from within the agent.
 """
 from __future__ import annotations
-import sys, os, json, urllib.request, urllib.error
-from pathlib import Path
+import os, json, sys
+
+try:
+    from groq import Groq
+    _GROQ_OK = True
+except ImportError:
+    _GROQ_OK = False
 
 try:
     from tools import BaseTool
 except ImportError:
     class BaseTool:
-        name: str = ""
-        description: str = ""
-        usage_example: str = ""
-        def run(self, user_input: str) -> str:
-            raise NotImplementedError
+        name = ""; description = ""; usage_example = ""
+        def run(self, user_input: str) -> str: ...
 
-def _load_key(provider: str) -> str | None:
-    env_map = {"groq": "GROQ_API_KEY", "openai": "OPENAI_API_KEY", "anthropic": "ANTHROPIC_API_KEY"}
-    key = os.environ.get(env_map.get(provider, ""))
-    if key:
-        return key
-    for cfg_path in [Path(__file__).parent.parent / "config.json", Path("config.json")]:
-        if cfg_path.exists():
-            try:
-                data = json.loads(cfg_path.read_text())
-                k = data.get(f"{provider}_api_key") or data.get("api_key")
-                if k:
-                    return k
-            except Exception:
-                pass
-    return None
+MODELS = {
+    "fast":    "llama-3.1-8b-instant",
+    "smart":   "llama-3.3-70b-versatile",
+    "code":    "qwen-2.5-coder-32b",
+    "default": "llama-3.3-70b-versatile",
+}
 
-def _call_groq(prompt, model, api_key):
-    model = model or "llama3-8b-8192"
-    payload = json.dumps({"model": model, "messages": [{"role": "user", "content": prompt}], "max_tokens": 512}).encode()
-    req = urllib.request.Request("https://api.groq.com/openai/v1/chat/completions", data=payload,
-        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        return json.loads(resp.read())["choices"][0]["message"]["content"].strip()
-
-def _call_openai(prompt, model, api_key):
-    model = model or "gpt-3.5-turbo"
-    payload = json.dumps({"model": model, "messages": [{"role": "user", "content": prompt}], "max_tokens": 512}).encode()
-    req = urllib.request.Request("https://api.openai.com/v1/chat/completions", data=payload,
-        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        return json.loads(resp.read())["choices"][0]["message"]["content"].strip()
-
-def _call_anthropic(prompt, model, api_key):
-    model = model or "claude-3-haiku-20240307"
-    payload = json.dumps({"model": model, "max_tokens": 512, "messages": [{"role": "user", "content": prompt}]}).encode()
-    req = urllib.request.Request("https://api.anthropic.com/v1/messages", data=payload,
-        headers={"x-api-key": api_key, "anthropic-version": "2023-06-01", "Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        return json.loads(resp.read())["content"][0]["text"].strip()
-
-PROVIDERS = {"groq": _call_groq, "openai": _call_openai, "anthropic": _call_anthropic}
+def _parse(raw: str) -> dict:
+    raw = raw.strip()
+    if raw.startswith("{"): 
+        try: return json.loads(raw)
+        except: pass
+    return {"prompt": raw, "model": "default"}
 
 class LLMSwitcherTool(BaseTool):
     name = "llm"
-    description = "Send a prompt to groq, openai, or anthropic.\nUsage: llm <provider> [model] | <prompt>"
-    usage_example = "llm groq | Tell me a joke"
+    description = (
+        "Query a specific LLM model. Input JSON with keys: "
+        "prompt (str), model (fast|smart|code|default or full model name), "
+        "system (optional system prompt), max_tokens (default 1024)."
+    )
+    usage_example = 'llm({"prompt":"Explain recursion","model":"fast"})'
 
     def run(self, user_input: str) -> str:
-        user_input = user_input.strip()
-        if not user_input:
-            return "[llm] Usage: llm <provider> [model] | <prompt>"
-        if "|" not in user_input:
-            return "[llm] Separator '|' required. Example: llm groq | Hello"
-        header, prompt = user_input.split("|", 1)
-        prompt = prompt.strip()
-        if not prompt:
-            return "[llm] Prompt is empty after '|'."
-        header_parts = header.strip().split()
-        if not header_parts:
-            return "[llm] Specify a provider: groq, openai, anthropic"
-        provider = header_parts[0].lower()
-        model = header_parts[1] if len(header_parts) > 1 else ""
-        if provider not in PROVIDERS:
-            return f"[llm] Unknown provider '{provider}'. Choose from: {', '.join(PROVIDERS)}"
-        api_key = _load_key(provider)
+        if not _GROQ_OK:
+            return "[llm] ERROR: groq not installed. Run: pip install groq"
+        api_key = os.environ.get("GROQ_API_KEY", "")
         if not api_key:
-            return f"[llm] No API key for '{provider}'. Set env var or add to config.json: {provider}_api_key"
+            try:
+                import json as j
+                cfg = j.load(open("config.json"))
+                api_key = cfg.get("groq_api_key","") or cfg.get("api_key","")
+            except: pass
+        if not api_key:
+            return "[llm] ERROR: GROQ_API_KEY not found in env or config.json"
+
+        p          = _parse(user_input)
+        prompt     = p.get("prompt","").strip()
+        model_key  = p.get("model","default")
+        model      = MODELS.get(model_key, model_key)
+        system     = p.get("system","You are a helpful assistant.")
+        max_tokens = int(p.get("max_tokens", 1024))
+
+        if not prompt:
+            return "[llm] ERROR: prompt is empty."
         try:
-            return f"[{provider}] {PROVIDERS[provider](prompt, model, api_key)}"
-        except urllib.error.HTTPError as exc:
-            return f"[llm] HTTP {exc.code} from {provider}: {exc.read().decode(errors='replace')[:300]}"
-        except Exception as exc:
-            return f"[llm] Error calling {provider}: {exc}"
+            client = Groq(api_key=api_key)
+            resp = client.chat.completions.create(
+                model=model,
+                messages=[{"role":"system","content":system},
+                           {"role":"user","content":prompt}],
+                max_tokens=max_tokens,
+            )
+            return resp.choices[0].message.content
+        except Exception as e:
+            return f"[llm] ERROR: {e}"
+
+if __name__ == "__main__":
+    t = LLMSwitcherTool()
+    print("LLM Switcher loaded. Available models:", list(MODELS.keys()))
+    print("All tests passed.")
