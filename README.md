@@ -48,18 +48,28 @@ Cortex/
 ├── requirements.txt
 │
 └── tools/
-    ├── __init__.py       # BaseTool class + auto-discovery
-    ├── respond.py        # Built-in: plain conversation tool
-    ├── code_writer.py    # Week  1: Write & run Python code
-    ├── file_manager.py   # Week  2: File & folder operations
-    ├── terminal_tool.py  # Week  3: Shell commands
-    ├── env_setup.py      # Week  4: Dev environment setup
-    ├── web_search.py     # Week  5: DuckDuckGo web search
-    ├── git_tool.py       # Week  6: Git version control
-    ├── llm_switcher.py   # Week  7: Query different Groq models
-    ├── prompt_manager.py # Week  8: Save & reuse prompt templates
-    ├── memory_store.py   # Week  9: Persistent key-value memory
-    └── task_planner.py   # Week 10: Break goals into subtasks
+    ├── __init__.py         # BaseTool class + auto-discovery
+    ├── respond.py          # Built-in: plain conversation tool
+    ├── code_writer.py      # Week  1: Write & run Python code
+    ├── file_manager.py     # Week  2: File & folder operations
+    ├── terminal_tool.py    # Week  3: Shell commands
+    ├── env_setup.py        # Week  4: Dev environment setup
+    ├── web_search.py       # Week  5: DuckDuckGo web search
+    ├── git_tool.py         # Week  6: Git version control
+    ├── llm_switcher.py     # Week  7: Query different Groq models
+    ├── prompt_manager.py   # Week  8: Save & reuse prompt templates
+    ├── memory_store.py     # Week  9: Persistent key-value memory
+    ├── task_planner.py     # Week 10: Break goals into subtasks
+    ├── clipboard.py        # Week 11: Clipboard manager
+    ├── note_taker.py       # Week 12: Markdown note taker
+    ├── calculator.py       # Week 13: Math & unit calculator
+    ├── system_monitor.py   # Week 14: CPU/RAM/disk monitor
+    ├── data_tool.py        # Week 15: JSON/CSV parser & converter
+    ├── email_sender.py     # Week 16: Send emails via SMTP
+    ├── image_tool.py       # Week 17: Resize/convert/compress images
+    ├── password_manager.py # Week 18: Encrypted password manager
+    ├── api_caller.py       # Week 19: HTTP GET/POST API caller
+    └── scheduler.py        # Week 20: Task scheduler
 ```
 
 ## 🧰 How to Add a New Tool
@@ -96,16 +106,16 @@ class MyTool(BaseTool):
 | Week  8 ✅ | Prompt Manager | Save & reuse prompt templates |
 | Week  9 ✅ | Memory Store | Persistent memory across sessions |
 | Week 10 ✅ | Task Planner | Break goals into subtasks |
-| Week 11 | Clipboard Manager | Copy/paste/store text snippets |
-| Week 12 | Note Taker | Create & search markdown notes |
-| Week 13 | Calculator | Math, units, currency, expressions |
-| Week 14 | System Monitor | CPU, RAM, disk, battery stats |
-| Week 15 | JSON/CSV Tool | Parse, filter, convert data files |
-| Week 16 | Email Sender | Send emails via SMTP |
-| Week 17 | Image Tool | Resize, convert, compress images |
-| Week 18 | Password Manager | Generate & store encrypted passwords |
-| Week 19 | API Caller | HTTP GET/POST to any API |
-| Week 20 | Scheduler | Schedule tasks at a specific time |
+| Week 11 ✅ | Clipboard Manager | Copy/paste/store text snippets |
+| Week 12 ✅ | Note Taker | Create & search markdown notes |
+| Week 13 ✅ | Calculator | Math, units, currency, expressions |
+| Week 14 ✅ | System Monitor | CPU, RAM, disk, battery stats |
+| Week 15 ✅ | JSON/CSV Tool | Parse, filter, convert data files |
+| Week 16 ✅ | Email Sender | Send emails via SMTP |
+| Week 17 ✅ | Image Tool | Resize, convert, compress images |
+| Week 18 ✅ | Password Manager | Generate & store encrypted passwords |
+| Week 19 ✅ | API Caller | HTTP GET/POST to any API |
+| Week 20 ✅ | Scheduler | Schedule tasks at a specific time |
 
 ## ⚙️ Configuration (`config.json`)
 | Key | Default | Description |
