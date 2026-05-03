@@ -4,6 +4,7 @@ config.json
 # Python
 __pycache__/
 .pytest_cache/
+.test-tmp/
 *.pyc
 *.pyo
 *.pyd
