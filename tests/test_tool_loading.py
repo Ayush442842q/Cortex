@@ -16,7 +16,11 @@ def test_all_tools_load():
     assert "markdown" in tools
     assert "random" in tools
     assert "url" in tools
-    assert len(tools) >= 40
+    assert "diff" in tools
+    assert "env_file" in tools
+    assert "logs" in tools
+    assert "sqlite" in tools
+    assert len(tools) >= 44
 
     for name, tool in tools.items():
         assert isinstance(tool, BaseTool), name
@@ -82,3 +86,42 @@ def test_markdown_toc_smoke():
 
     assert "[Title](#title)" in result
     assert "[Child](#child)" in result
+
+
+def test_diff_text_smoke():
+    tools = load_all_tools()
+
+    result = tools["diff"].run("text hello | hello world")
+
+    assert "+hello world" in result
+
+
+def test_logs_errors_smoke():
+    tools = load_all_tools()
+
+    result = tools["logs"].run("errors INFO ok\nERROR failed to start")
+
+    assert "failed to start" in result
+
+
+def test_sqlite_tables_smoke():
+    import sqlite3
+    from pathlib import Path
+    from uuid import uuid4
+
+    tmp_dir = Path(".test-tmp")
+    tmp_dir.mkdir(exist_ok=True)
+    db_path = tmp_dir / f"sample-{uuid4().hex}.db"
+    try:
+        with sqlite3.connect(db_path) as conn:
+            conn.execute("create table users (id integer primary key, name text)")
+
+        tools = load_all_tools()
+        result = tools["sqlite"].run(f"tables {db_path}")
+
+        assert "users" in result
+    finally:
+        try:
+            db_path.unlink(missing_ok=True)
+        except PermissionError:
+            pass

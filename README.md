@@ -118,6 +118,10 @@ Cortex currently includes tools for:
 - URL parsing and query editing
 - secure random values and UUIDs
 - Markdown table-of-contents and link inspection
+- read-only SQLite database inspection
+- `.env` file inspection and editing
+- text and file diffs
+- log summaries and error extraction
 - final conversational responses
 
 Run `python -c "from tools import load_all_tools; print(sorted(load_all_tools()))"` to see what loads in your environment.
