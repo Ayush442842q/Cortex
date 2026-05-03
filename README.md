@@ -114,6 +114,10 @@ Cortex currently includes tools for:
 - zip archive creation and extraction
 - date/time conversion and arithmetic
 - project tree inspection
+- text encoding and decoding
+- URL parsing and query editing
+- secure random values and UUIDs
+- Markdown table-of-contents and link inspection
 - final conversational responses
 
 Run `python -c "from tools import load_all_tools; print(sorted(load_all_tools()))"` to see what loads in your environment.
