@@ -1,78 +1,70 @@
-# Contributing a Tool to AgentBase
+# Contributing to Cortex
 
-Adding a tool is intentionally simple. Here's everything you need to know.
+Thanks for helping improve Cortex. The project is designed to stay approachable: small files, focused tools, and clear behavior are preferred over clever abstractions.
 
----
+## Local Setup
 
-## Minimum Template
-
-```python
-# tools/your_tool_name.py
-
-from tools import BaseTool
-
-class YourToolName(BaseTool):
-    name = "your_tool_name"           # snake_case, unique
-    description = "One clear sentence about what this tool does and when to use it."
-    usage_example = "a typical input the agent would pass to this tool"
-
-    def run(self, input: str) -> str:
-        # Your logic here
-        result = do_something(input)
-        return str(result)
+```bash
+python -m venv .venv
+pip install -r requirements.txt
+pip install -e ".[dev]"
 ```
 
-Drop the file in `tools/`. Restart the agent. Done.
+## Before Opening a Pull Request
 
----
+Run:
 
-## Rules
+```bash
+python -m py_compile main.py agent.py brain.py config.py tools/*.py
+pytest
+```
 
-- `name` must be unique across all tools (snake_case)
-- `description` is what the AI reads to decide whether to use your tool — make it clear and specific
-- `run()` always receives a `str` and must return a `str`
-- Handle your own exceptions inside `run()` — return an error string, don't raise
-- Keep each tool focused on ONE thing
+If you are using PowerShell and `*.py` is not expanded:
 
----
+```powershell
+python -c "import py_compile, pathlib; [py_compile.compile(str(p), doraise=True) for p in [*pathlib.Path('.').glob('*.py'), *pathlib.Path('tools').glob('*.py')]]"
+pytest
+```
 
-## Good Description Examples
+## Adding a Tool
 
-✅ `"Runs a Python code snippet and returns the output or error message"`  
-✅ `"Creates, reads, moves, or deletes files and folders on the local system"`  
-✅ `"Searches the web and returns a summary of the top results"`  
+1. Add one file under `tools/`.
+2. Subclass `BaseTool`.
+3. Set `name`, `description`, and `usage_example`.
+4. Implement `run(self, input: str) -> str`.
+5. Catch exceptions inside `run()` and return a useful error string.
 
-❌ `"Does stuff with files"` — too vague  
-❌ `"A tool"` — useless  
-
----
-
-## Example: A Simple Calculator Tool
+Template:
 
 ```python
-# tools/calculator.py
-
 from tools import BaseTool
 
-class CalculatorTool(BaseTool):
-    name = "calculator"
-    description = "Evaluates a math expression and returns the result. Use for arithmetic, unit conversion, or numeric calculations."
-    usage_example = "2 ** 10 + 500 / 4"
+
+class ExampleTool(BaseTool):
+    name = "example"
+    description = "Explain what this tool does and when the agent should use it."
+    usage_example = "example input"
 
     def run(self, input: str) -> str:
         try:
-            result = eval(input, {"__builtins__": {}})
-            return f"Result: {result}"
-        except Exception as e:
-            return f"Error evaluating expression: {e}"
+            return "result"
+        except Exception as exc:
+            return f"[example] ERROR: {exc}"
 ```
 
----
+## Tool Guidelines
 
-## Checklist Before Submitting
+- Keep each tool focused on one job.
+- Use `snake_case` names and make them unique.
+- Prefer structured input with JSON when the command has multiple parameters.
+- Keep network calls timeout-bound.
+- Avoid surprising side effects.
+- Never print or commit secrets.
+- Make descriptions specific; the model uses them to choose tools.
 
-- [ ] File is in `tools/` folder
-- [ ] Class extends `BaseTool`
-- [ ] `name`, `description`, `usage_example` are all set
-- [ ] `run()` handles exceptions internally
-- [ ] Tested locally — agent can actually use it
+## Pull Request Guidelines
+
+- Keep changes scoped.
+- Include a short explanation of user impact.
+- Mention any new dependencies.
+- Add or update tests when changing tool loading, parsing, or safety behavior.

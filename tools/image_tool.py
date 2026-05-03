@@ -18,10 +18,10 @@ except ImportError:
         def run(self,u:str)->str: ...
 
 def _ensure():
+    global Image,_OK
     if _OK: return None
     r=subprocess.run([sys.executable,"-m","pip","install","Pillow","-q"],capture_output=True,text=True)
     if r.returncode!=0: return f"pip install Pillow failed: {r.stderr.strip()}"
-    global Image,_OK
     from PIL import Image as _I; Image=_I; _OK=True; return None
 
 def _parse(r):
