@@ -110,6 +110,10 @@ Cortex currently includes tools for:
 - translation
 - disk usage analysis
 - regex testing
+- checksums and digest verification
+- zip archive creation and extraction
+- date/time conversion and arithmetic
+- project tree inspection
 - final conversational responses
 
 Run `python -c "from tools import load_all_tools; print(sorted(load_all_tools()))"` to see what loads in your environment.
