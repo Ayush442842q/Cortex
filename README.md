@@ -1,166 +1,192 @@
-# 🤖 Cortex
-An extensible, terminal-based AI agent powered by **[Groq](https://console.groq.com/)**.
-Built to grow — one tool every week. **21 tools and counting.**
+# Cortex
 
----
+Cortex is an extensible, terminal-based AI agent powered by Groq. It uses a simple ReAct loop: the model chooses a tool, the tool runs locally, Cortex observes the result, and the loop continues until the task is complete.
 
-## ⚡ Quick Start
+The project is intentionally small and hackable. Add a Python file under `tools/`, subclass `BaseTool`, restart the CLI, and the new capability is available to the agent.
 
-### 1. Install dependencies
+## Features
+
+- Groq-powered reasoning loop with strict JSON tool decisions
+- Auto-discovered local tools
+- Rich terminal interface
+- Session history with reset support
+- Tools for files, shell commands, code execution, Git, web search, data formatting, notes, memory, scheduling, networking, and system inspection
+- Standard library first, with optional runtime dependencies for image and system tools
+
+## Quick Start
+
+```bash
+git clone https://github.com/Ayush442842q/Cortex.git
+cd Cortex
+python -m venv .venv
 ```
+
+Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-```
-
-### 2. Get your free Groq API key
-* Visit: **[https://console.groq.com](https://console.groq.com/)**
-* Sign up → API Keys → Create Key
-
-### 3. Set your API key
-```
-# Option A: Environment variable (recommended)
-export GROQ_API_KEY=gsk_your_key_here   # Mac/Linux
-set GROQ_API_KEY=gsk_your_key_here      # Windows CMD
-
-# Option B: Add to config.json (the app will prompt you on first run)
-```
-
-### 4. Run
-```
 python main.py
 ```
 
----
+macOS or Linux:
 
-## 🎮 Commands
-| Command | What it does |
-|---|---|
-| `tools` | List all loaded tools |
-| `clear` | Clear conversation memory |
-| `help` | Show help menu |
+```bash
+source .venv/bin/activate
+pip install -r requirements.txt
+python main.py
+```
+
+## Configuration
+
+Cortex needs a Groq API key.
+
+Recommended:
+
+```bash
+export GROQ_API_KEY=gsk_your_key_here
+```
+
+Windows CMD:
+
+```cmd
+set GROQ_API_KEY=gsk_your_key_here
+```
+
+You can also let Cortex create a local `config.json` on first run. That file is ignored by Git.
+
+Default settings:
+
+```json
+{
+  "api_key": "API_KEY_HERE",
+  "model": "llama-3.3-70b-versatile",
+  "theme": "monokai",
+  "max_iterations": 10,
+  "timeout_seconds": 30,
+  "show_thinking": true
+}
+```
+
+## CLI Commands
+
+| Command | Description |
+| --- | --- |
+| `tools` | List loaded tools |
+| `clear` / `reset` | Clear session memory |
+| `help` | Show command help |
 | `exit` | Quit |
-| *anything else* | Sent to the agent as a task |
+| anything else | Send a task to the agent |
 
----
+## Available Tools
 
-## 🏗️ Project Structure
+Cortex currently includes tools for:
+
+- local file operations
+- terminal commands
+- Python code execution
+- Python environment setup
+- web search and URL fetches
+- Git operations
+- direct Groq model calls
+- prompt templates
+- TF-IDF document search
+- persistent key-value memory
+- task planning
+- clipboard snippets
+- markdown notes
+- calculations and statistics
+- system monitoring
+- JSON and CSV parsing/formatting
+- email sending through SMTP
+- image processing
+- encrypted password storage
+- REST API calls
+- task scheduling
+- DNS lookup
+- process management
+- Python linting
+- TCP port scanning
+- translation
+- disk usage analysis
+- regex testing
+- checksums and digest verification
+- zip archive creation and extraction
+- date/time conversion and arithmetic
+- project tree inspection
+- final conversational responses
+
+Run `python -c "from tools import load_all_tools; print(sorted(load_all_tools()))"` to see what loads in your environment.
+
+## How It Works
+
+```text
+User task
+  -> Brain builds a prompt from the available tools
+  -> Groq returns a JSON decision
+  -> Agent runs the selected tool
+  -> Tool result is added to history
+  -> Loop repeats until the respond tool is selected
 ```
-Cortex/
-│
-├── main.py              # Entry point — CLI interface
-├── agent.py             # Main agent loop (Think → Act → Observe)
-├── brain.py             # Groq LLM reasoning core
-├── config.py            # Config loading and API key management
-├── config.json          # Your settings (gitignored)
-├── requirements.txt
-│
-└── tools/
-    ├── __init__.py         # BaseTool + auto-discovery
-    ├── respond.py                  # Base: Built-in conversation fallback
-    ├── code_writer.py              # Week  1: Write & run Python code
-    ├── file_manager.py             # Week  2: File & folder operations
-    ├── terminal.py                 # Week  3: Run shell commands
-    ├── env_setup.py                # Week  4: Dev environment setup
-    ├── web_search.py               # Week  5: DuckDuckGo search (no API key)
-    ├── git_tool.py                 # Week  6: Git version control
-    ├── llm_switcher.py             # Week  7: Query different LLM providers
-    ├── prompt_manager.py           # Week  8: Save & reuse prompt templates
-    ├── embedding_search.py         # Week  9: TF-IDF document search
-    ├── memory_store.py             # Week  9: Persistent key-value memory
-    ├── task_planner.py             # Week 10: Break goals into subtasks
-    ├── clipboard.py                # Week 11: Copy/paste/store text snippets
-    ├── note_taker.py               # Week 12: Create & search markdown notes
-    ├── calculator.py               # Week 13: Math, units & expressions
-    ├── system_monitor.py           # Week 14: CPU, RAM, disk & battery stats
-    ├── data_tool.py                # Week 15: Parse, filter & convert data
-    ├── email_sender.py             # Week 16: Send emails via SMTP
-    ├── image_tool.py               # Week 17: Resize, convert & compress images
-    ├── password_manager.py         # Week 18: Generate & store encrypted passwords
-    ├── api_caller.py               # Week 19: HTTP GET/POST to any REST API
-    └── scheduler.py                # Week 20: Schedule tasks at a specific time
+
+The model must return:
+
+```json
+{
+  "thinking": "brief reasoning",
+  "tool": "tool_name",
+  "input": "exact tool input"
+}
 ```
 
----
+## Add a Tool
 
-## 🧰 How to Add a New Tool
-
-1. Create a file in `tools/` — e.g. `tools/my_tool.py`
-2. Extend `BaseTool` and implement `run()`
+Create `tools/my_tool.py`:
 
 ```python
 from tools import BaseTool
 
+
 class MyTool(BaseTool):
     name = "my_tool"
-    description = "What this tool does in one sentence"
-    usage_example = "example of what input this tool receives"
+    description = "One clear sentence about when to use this tool."
+    usage_example = "example input"
 
     def run(self, input: str) -> str:
-        # Your logic here
-        return "result"
+        try:
+            return "result"
+        except Exception as exc:
+            return f"[my_tool] ERROR: {exc}"
 ```
 
-3. Restart the agent. **That's it.** The tool is auto-discovered.
+Restart Cortex. The loader discovers the tool automatically.
 
----
+## Development
 
-## 🗺️ Roadmap
-| Release | Tool | Capability |
-|---|---|---|
-| **Base** ✅ | Core loop | Think, plan, respond |
-| Week  1 ✅ | Code Writer | Write & run Python code |
-| Week  2 ✅ | File Manager | File & folder operations |
-| Week  3 ✅ | Terminal Tool | Run shell commands |
-| Week  4 ✅ | Environment Setup | Dev environment setup |
-| Week  5 ✅ | Web Search | DuckDuckGo search (no API key) |
-| Week  6 ✅ | Git Tool | Git version control |
-| Week  7 ✅ | LLM Switcher | Query different LLM providers |
-| Week  8 ✅ | Prompt Manager | Save & reuse prompt templates |
-| Week  9 ✅ | Embedding Search | TF-IDF document search |
-| Week  9 ✅ | Memory Store | Persistent key-value memory |
-| Week 10 ✅ | Task Planner | Break goals into subtasks |
-| Week 11 ✅ | Clipboard Manager | Copy/paste/store text snippets |
-| Week 12 ✅ | Note Taker | Create & search markdown notes |
-| Week 13 ✅ | Calculator | Math, units & expressions |
-| Week 14 ✅ | System Monitor | CPU, RAM, disk & battery stats |
-| Week 15 ✅ | JSON/CSV Tool | Parse, filter & convert data |
-| Week 16 ✅ | Email Sender | Send emails via SMTP |
-| Week 17 ✅ | Image Tool | Resize, convert & compress images |
-| Week 18 ✅ | Password Manager | Generate & store encrypted passwords |
-| Week 19 ✅ | API Caller | HTTP GET/POST to any REST API |
-| Week 20 ✅ | Scheduler | Schedule tasks at a specific time |
+Install development dependencies:
 
----
-
-## ⚙️ Configuration (`config.json`)
-| Key | Default | Description |
-|---|---|---|
-| `api_key` | `""` | Your Groq API key |
-| `model` | `llama-3.3-70b-versatile` | Groq model to use |
-| `show_thinking` | `true` | Show agent reasoning |
-| `max_iterations` | `10` | Max steps per task |
-| `timeout_seconds` | `30` | Tool execution timeout |
-| `theme` | `monokai` | Syntax highlight theme |
-
----
-
-## 🧠 How It Works
-```
-You type a task
-      ↓
-Brain (Groq LLM) reads the task + available tools
-      ↓
-Brain decides: which tool? what input?
-      ↓
-Tool runs → returns result
-      ↓
-Brain sees result → decides next step
-      ↓
-Repeats until task is done
-      ↓
-"respond" tool → final answer shown to you
+```bash
+pip install -e ".[dev]"
 ```
 
----
+Run checks:
 
-## 📄 License
-MIT — use it, fork it, build on it.
+```bash
+python -m py_compile main.py agent.py brain.py config.py tools/*.py
+pytest
+```
+
+On Windows PowerShell, if shell globbing does not expand for `py_compile`, use:
+
+```powershell
+python -c "import py_compile, pathlib; [py_compile.compile(str(p), doraise=True) for p in [*pathlib.Path('.').glob('*.py'), *pathlib.Path('tools').glob('*.py')]]"
+pytest
+```
+
+## Safety Notes
+
+Cortex runs local tools with real side effects. Some tools can write files, execute shell commands, call network APIs, send email, install packages, kill processes, or modify Git repositories. Run it in an environment you trust, review tool behavior before exposing it to other users, and keep secrets out of prompts and logs.
+
+## License
+
+MIT. See [LICENSE](LICENSE).

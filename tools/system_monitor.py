@@ -18,10 +18,10 @@ except ImportError:
         def run(self,u:str)->str: ...
 
 def _ensure():
+    global psutil,_OK
     if _OK: return None
     r=subprocess.run([sys.executable,"-m","pip","install","psutil","-q"],capture_output=True,text=True)
     if r.returncode!=0: return f"pip install psutil failed: {r.stderr.strip()}"
-    global psutil,_OK
     import psutil as _p; psutil=_p; _OK=True; return None
 
 def _parse(r):
