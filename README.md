@@ -68,6 +68,39 @@ Default settings:
 }
 ```
 
+## Web Intake Frontend
+
+This repo also includes a dark Vercel-ready intake page in `public/`.
+Visitors submit the form at the public site, and the private API route at
+`api/telegram.js` sends the request to Telegram.
+
+Telegram bots cannot send a message to a raw phone number. Create a bot with
+BotFather, open the bot from the Telegram account that should receive requests,
+send `/start`, then use that chat ID for delivery.
+
+Required Vercel environment variables:
+
+```bash
+TELEGRAM_BOT_TOKEN=bot_token_from_botfather
+TELEGRAM_CHAT_ID=your_telegram_chat_id
+```
+
+Local development with Vercel CLI:
+
+```powershell
+$env:TELEGRAM_BOT_TOKEN="bot_token_from_botfather"
+$env:TELEGRAM_CHAT_ID="your_telegram_chat_id"
+vercel dev
+```
+
+Production setup:
+
+```bash
+vercel env add TELEGRAM_BOT_TOKEN production
+vercel env add TELEGRAM_CHAT_ID production
+vercel --prod
+```
+
 ## CLI Commands
 
 | Command | Description |

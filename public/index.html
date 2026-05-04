@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Cortex request intake with Telegram delivery."
+    />
+    <title>Cortex Intake</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero" aria-labelledby="page-title">
+        <nav class="topbar" aria-label="Primary">
+          <a class="brand" href="/" aria-label="Cortex home">
+            <span class="brand-mark" aria-hidden="true">C</span>
+            <span>Cortex</span>
+          </a>
+          <a class="nav-action" href="#request-form">Send request</a>
+        </nav>
+
+        <div class="hero-grid">
+          <div class="hero-copy">
+            <h1 id="page-title">Tell Cortex what to build next.</h1>
+            <p>
+              Share the project details once. The request lands straight in
+              Telegram so it can be picked up without opening an admin panel.
+            </p>
+          </div>
+
+          <aside class="signal-panel" aria-label="Delivery preview">
+            <div class="signal-header">
+              <span class="signal-dot" aria-hidden="true"></span>
+              <span>Telegram delivery</span>
+            </div>
+            <div class="message-card">
+              <span class="message-label">New request</span>
+              <strong>Dark frontend + direct lead capture</strong>
+              <p>Name, contact, project type, budget, and message are sent as
+                one clean Telegram note.</p>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="form-section" aria-labelledby="form-title">
+        <div class="section-copy">
+          <h2 id="form-title">Project request</h2>
+          <p>
+            Add enough context to start the work. Required fields are marked
+            in the form.
+          </p>
+        </div>
+
+        <form id="request-form" class="request-form" novalidate>
+          <div class="field-grid">
+            <label class="field">
+              <span>Name *</span>
+              <input
+                autocomplete="name"
+                maxlength="80"
+                name="name"
+                placeholder="Your name"
+                required
+                type="text"
+              />
+            </label>
+
+            <label class="field">
+              <span>Contact *</span>
+              <input
+                autocomplete="tel"
+                maxlength="120"
+                name="contact"
+                placeholder="Telegram, phone, or email"
+                required
+                type="text"
+              />
+            </label>
+          </div>
+
+          <div class="field-grid">
+            <label class="field">
+              <span>Project type *</span>
+              <select name="projectType" required>
+                <option value="">Choose one</option>
+                <option>Frontend build</option>
+                <option>Automation</option>
+                <option>AI agent</option>
+                <option>Bug fix</option>
+                <option>Other</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>Budget range</span>
+              <select name="budget">
+                <option value="">Not decided</option>
+                <option>Under $250</option>
+                <option>$250 - $1,000</option>
+                <option>$1,000 - $5,000</option>
+                <option>$5,000+</option>
+              </select>
+            </label>
+          </div>
+
+          <label class="field">
+            <span>Message *</span>
+            <textarea
+              maxlength="1200"
+              name="message"
+              placeholder="What should be built, fixed, or connected?"
+              required
+              rows="7"
+            ></textarea>
+          </label>
+
+          <label class="field hidden-field" aria-hidden="true">
+            <span>Company</span>
+            <input autocomplete="off" name="company" tabindex="-1" type="text" />
+          </label>
+
+          <div class="form-footer">
+            <p id="form-status" class="form-status" role="status"></p>
+            <button class="submit-button" type="submit">
+              <svg
+                aria-hidden="true"
+                fill="none"
+                height="18"
+                viewBox="0 0 24 24"
+                width="18"
+              >
+                <path
+                  d="M5 12h13M13 6l6 6-6 6"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                />
+              </svg>
+              Send to Telegram
+            </button>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
